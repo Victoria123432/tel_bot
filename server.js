@@ -57,6 +57,7 @@ app.listen(config.port, () => {
 // ── Start Telegram Bot ────────────────────────────────────────────────────────
 if (config.telegramBotToken && config.telegramBotToken !== 'YOUR_TELEGRAM_BOT_TOKEN_HERE') {
   const bot = require('./bot');
+  const { startScheduler } = require('./bot/reminderScheduler');
 
   // bot.launch() in Telegraf v4 resolves only when the bot STOPS,
   // so we log before calling it and catch startup errors separately.
@@ -65,6 +66,7 @@ if (config.telegramBotToken && config.telegramBotToken !== 'YOUR_TELEGRAM_BOT_TO
       winstonLogger.info(`[BOT] Starting @${info.username} (${info.first_name})...`);
       bot.launch();
       winstonLogger.info('[BOT] Telegram bot is running (long-polling)');
+      startScheduler(bot);
     })
     .catch((err) => winstonLogger.error(`[BOT] Failed to connect to Telegram: ${err.message}`));
 

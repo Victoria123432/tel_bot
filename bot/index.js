@@ -5,7 +5,9 @@ const { Telegraf, Markup } = require('telegraf');
 const { winstonLogger }    = require('../middleware/logger');
 const { detectIntent }     = require('./nlp');
 const { buildWeatherMessage, buildCurrencyMessage } = require('./messages');
-const { upsertUser, setCity, setLanguage } = require('../services/userService');
+const { upsertUser, setCity, setLanguage }              = require('../services/userService');
+const { createReminder, getReminders, deleteReminder }  = require('../services/reminderService');
+const { isReminderRequest, parseReminder, formatDateTime } = require('./reminderParser');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
@@ -39,10 +41,12 @@ bot.start((ctx) => {
     `Я — інформаційний бот. Ось що я вмію:\n\n` +
     `🌤 /weather — погода у вказаному місті\n` +
     `💱 /currency — поточний курс валют\n` +
+    `🔔 /reminders — мої нагадування\n` +
     `⚙️ /settings — мої налаштування\n` +
     `❓ /help — довідка\n\n` +
-    `Або просто напиши мені, що тебе цікавить — наприклад:\n` +
-    `_"погода в Kyiv"_ або _"курс долара"_`,
+    `Або просто напиши:\n` +
+    `_"погода в Kyiv"_, _"курс долара"_ або\n` +
+    `_"Нагадай мені завтра о 9:00 про зустріч"_`,
     Markup.keyboard([
       ['🌤 Погода', '💱 Курс валют'],
       ['⚙️ Налаштування', '❓ Допомога'],
@@ -54,14 +58,16 @@ bot.start((ctx) => {
 bot.help((ctx) => {
   ctx.replyWithMarkdown(
     `*Доступні команди:*\n\n` +
-    `🌤 /weather \\[місто\\] — погода (якщо місто не вказано — використовується збережене)\n` +
+    `🌤 /weather \\[місто\\] — погода\n` +
     `💱 /currency \\[валюти\\] — курс валют відносно EUR\n` +
+    `🔔 /reminders — список активних нагадувань\n` +
     `⚙️ /settings — переглянути профіль\n` +
     `🏙 /setcity \\<місто\\> — зберегти улюблене місто\n` +
     `🌐 /setlang \\<uk|en\\> — мова відповіді\n\n` +
-    `*Вільний текст:*\n` +
-    `Просто напиши що тебе цікавить — бот розпізнає запит автоматично.\n` +
-    `Приклади: _"погода в Львів"_, _"курс євро"_`,
+    `*Нагадування \\(вільний текст\\):*\n` +
+    `_"Нагадай мені завтра о 9:00 про зустріч"_\n` +
+    `_"Нагадай через 2 години зателефонувати"_\n` +
+    `_"Нагадай о 15:30 купити хліб"_`,
   );
 });
 
@@ -104,6 +110,34 @@ bot.command('setlang', async (ctx) => {
 
   await setLanguage(ctx.from.id, lang);
   ctx.reply(`✅ Мову збережено: ${lang === 'uk' ? '🇺🇦 Українська' : '🇬🇧 English'}`);
+});
+
+// ── /reminders — list & delete ───────────────────────────────────────────────
+bot.command('reminders', async (ctx) => {
+  const list = getReminders(ctx.from.id);
+
+  if (!list.length) {
+    return ctx.reply('📭 У тебе немає активних нагадувань.');
+  }
+
+  for (const r of list) {
+    await ctx.replyWithMarkdown(
+      `🔔 *${r.text}*\n📅 ${formatDateTime(r.remindAt)}`,
+      Markup.inlineKeyboard([
+        Markup.button.callback('🗑 Видалити', `del_rem_${r.id}`),
+      ]),
+    );
+  }
+});
+
+// ── Callback: delete reminder ─────────────────────────────────────────────────
+bot.action(/^del_rem_(\d+)$/, async (ctx) => {
+  const id      = ctx.match[1];
+  const deleted = deleteReminder(ctx.from.id, id);
+  await ctx.answerCbQuery(deleted ? '✅ Нагадування видалено' : '⚠️ Не знайдено');
+  if (deleted) {
+    await ctx.editMessageText('🗑 _Нагадування видалено_', { parse_mode: 'Markdown' });
+  }
 });
 
 // ── /weather [city] ───────────────────────────────────────────────────────────
@@ -203,11 +237,36 @@ bot.hears('❓ Допомога', (ctx) =>
 
 // ── Free-text NLP handler ─────────────────────────────────────────────────────
 bot.on('text', async (ctx) => {
+  const msgText = ctx.message.text;
+
+  // ── Reminder detection (before NLP) ────────────────────────────────────────
+  if (isReminderRequest(msgText)) {
+    const parsed = parseReminder(msgText);
+    if (!parsed) {
+      return ctx.reply(
+        '⚠️ Не вдалося розпізнати час нагадування.\n' +
+        'Приклади:\n' +
+        '• _"Нагадай мені завтра о 9:00 про зустріч"_\n' +
+        '• _"Нагадай через 2 години зателефонувати"_\n' +
+        '• _"Нагадай о 15:30 купити хліб"_',
+        { parse_mode: 'Markdown' },
+      );
+    }
+
+    createReminder(ctx.from.id, { text: parsed.text, remindAt: parsed.remindAt });
+    return ctx.reply(
+      `✅ Нагадування збережено!\n\n` +
+      `📝 ${parsed.text}\n` +
+      `📅 ${formatDateTime(parsed.remindAt)}\n\n` +
+      `Переглянути всі: /reminders`,
+    );
+  }
+
   let intent, city;
   try {
-    ({ intent, city } = await detectIntent(ctx.message.text));
+    ({ intent, city } = await detectIntent(msgText));
   } catch (err) {
-    winstonLogger.error(`[BOT] NLP service error: ${err.message}`);
+    winstonLogger.error(`[BOT] NLP error: ${err.message}`);
     return ctx.reply('⚠️ NLP сервіс недоступний. Спробуй пізніше або використай команди /weather, /currency.');
   }
 
