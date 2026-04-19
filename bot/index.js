@@ -122,18 +122,24 @@ bot.hears('❓ Допомога', (ctx) => bot.handleUpdate({ ...ctx.update, mes
 
 // ── Free-text NLP handler ─────────────────────────────────────────────────────
 bot.on('text', async (ctx) => {
-  const { intent, city } = detectIntent(ctx.message.text);
+  let intent, city;
+  try {
+    ({ intent, city } = await detectIntent(ctx.message.text));
+  } catch (err) {
+    winstonLogger.error(`[BOT] NLP service error: ${err.message}`);
+    return ctx.reply('⚠️ NLP сервіс недоступний. Спробуй пізніше або використай команди /weather, /currency.');
+  }
 
-  if (intent === 'greeting') {
+  if (intent === 'GREETING') {
     const name = ctx.from?.first_name || '';
     return ctx.reply(`👋 Привіт${name ? ', ' + name : ''}! Чим можу допомогти?\nНапиши /help щоб побачити команди.`);
   }
 
-  if (intent === 'help') {
+  if (intent === 'HELP') {
     return bot.handleUpdate({ ...ctx.update, message: { ...ctx.message, text: '/help' } });
   }
 
-  if (intent === 'weather') {
+  if (intent === 'WEATHER') {
     if (city) {
       // City detected in the message — fetch immediately
       const loading = await ctx.reply('⏳ Отримую дані про погоду…');
@@ -149,7 +155,7 @@ bot.on('text', async (ctx) => {
     return ctx.reply('🏙 Вкажи місто. Наприклад: /weather Kyiv');
   }
 
-  if (intent === 'currency') {
+  if (intent === 'CURRENCY') {
     const loading = await ctx.reply('⏳ Отримую курс валют…');
     try {
       const msg = await buildCurrencyMessage();

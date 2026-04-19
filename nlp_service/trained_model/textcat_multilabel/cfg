@@ -1,0 +1,9 @@
+{
+  "labels":[
+    "WEATHER",
+    "CURRENCY",
+    "GREETING",
+    "OTHER"
+  ],
+  "threshold":0.5
+}

@@ -1,78 +1,31 @@
 'use strict';
 
-/**
- * Lightweight keyword-based intent detector.
- * Returns one of: 'weather' | 'currency' | 'news' | 'greeting' | 'help' | null
- */
+const axios = require('axios');
+const { winstonLogger } = require('../middleware/logger');
 
-const INTENTS = [
-  {
-    name: 'weather',
-    keywords: [
-      'погода', 'погоду', 'погоди', 'weather', 'температура', 'температуру',
-      'температури', 'temperature', 'прогноз', 'forecast', 'спека', 'мороз',
-      'дощ', 'сніг', 'хмарно', 'сонячно', 'rain', 'snow', 'sunny', 'cloudy',
-      'градус', 'celsius', 'fahrenheit',
-    ],
-  },
-  {
-    name: 'currency',
-    keywords: [
-      'курс', 'валюта', 'валюти', 'валюту', 'currency', 'exchange', 'rate',
-      'долар', 'доларів', 'dollar', 'usd', 'євро', 'euro', 'eur',
-      'гривня', 'гривні', 'hryvnia', 'uah', 'фунт', 'pound', 'gbp',
-      'конвертер', 'конвертація', 'convert',
-    ],
-  },
-  {
-    name: 'news',
-    keywords: [
-      'новини', 'новина', 'новость', 'news', 'події', 'подія', 'headline',
-      'статті', 'стаття', 'article', 'latest', 'останні',
-    ],
-  },
-  {
-    name: 'greeting',
-    keywords: [
-      'привіт', 'hello', 'hi', 'hey', 'вітаю', 'добрий', 'доброго',
-      'доброго ранку', 'good morning', 'good evening', 'хай',
-    ],
-  },
-  {
-    name: 'help',
-    keywords: [
-      'допомога', 'допоможи', 'help', 'що вмієш', 'що ти вмієш',
-      'команди', 'commands', 'можливості', 'як користуватись',
-    ],
-  },
-];
+const NLP_SERVICE_URL = process.env.NLP_SERVICE_URL || 'http://localhost:5000';
 
 /**
- * Detect intent from a free-text message.
- * @param {string} text
- * @returns {{ intent: string|null, city: string|null }}
+ * Detect intent and extract city from free text using the Python NLP service.
+ *
+ * Returns:
+ *   { intent: 'WEATHER'|'CURRENCY'|'GREETING'|'OTHER', city: string|null }
  */
-function detectIntent(text) {
-  const lower = text.toLowerCase();
+async function detectIntent(text) {
+  const { data } = await axios.post(
+    `${NLP_SERVICE_URL}/analyze`,
+    { text },
+    { timeout: 4000 },
+  );
 
-  let intent = null;
-  for (const { name, keywords } of INTENTS) {
-    if (keywords.some((kw) => lower.includes(kw))) {
-      intent = name;
-      break;
-    }
-  }
+  winstonLogger.info(
+    `[NLP] "${text}" → intent=${data.intent} city=${data.city || '-'}`,
+  );
 
-  // Try to extract a city name for weather intent
-  // Patterns: "погода в Kyiv", "weather in London", "погода Kyiv"
-  let city = null;
-  if (intent === 'weather') {
-    const cityMatch =
-      lower.match(/(?:погода|weather|прогноз|forecast)\s+(?:в|у|in|for)?\s*([a-zа-яіїєґ']+)/i);
-    if (cityMatch) city = cityMatch[1];
-  }
-
-  return { intent, city };
+  return {
+    intent: data.intent,
+    city:   data.city,
+  };
 }
 
 module.exports = { detectIntent };
