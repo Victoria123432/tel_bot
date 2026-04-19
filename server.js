@@ -27,7 +27,7 @@ app.get('/', (req, res) => {
     message: 'Info REST API is running',
     endpoints: {
       weather:  'GET /weather?city=<city>&units=metric&lang=en',
-      currency: 'GET /currency?base=USD&symbols=EUR,UAH,GBP',
+      currency: 'GET /currency?base=EUR&symbols=USD,UAH,GBP',
       news:     'GET /news?q=<keyword>&lang=en&country=ua&max=10',
     },
   });
@@ -48,8 +48,29 @@ app.use((req, res) => {
 // Centralised error handler (must be last)
 app.use(errorHandler);
 
-// ── Start ─────────────────────────────────────────────────────────────────────
+// ── Start REST API ────────────────────────────────────────────────────────────
 app.listen(config.port, () => {
-  winstonLogger.info(`Server started on http://localhost:${config.port}`);
-  winstonLogger.info('Available routes: GET /weather  GET /currency  GET /news');
+  winstonLogger.info(`REST API started on http://localhost:${config.port}`);
+  winstonLogger.info('Routes: GET /weather  GET /currency  GET /news');
 });
+
+// ── Start Telegram Bot ────────────────────────────────────────────────────────
+if (config.telegramBotToken && config.telegramBotToken !== 'YOUR_TELEGRAM_BOT_TOKEN_HERE') {
+  const bot = require('./bot');
+
+  // bot.launch() in Telegraf v4 resolves only when the bot STOPS,
+  // so we log before calling it and catch startup errors separately.
+  bot.telegram.getMe()
+    .then((info) => {
+      winstonLogger.info(`[BOT] Starting @${info.username} (${info.first_name})...`);
+      bot.launch();
+      winstonLogger.info('[BOT] Telegram bot is running (long-polling)');
+    })
+    .catch((err) => winstonLogger.error(`[BOT] Failed to connect to Telegram: ${err.message}`));
+
+  // Graceful shutdown
+  process.once('SIGINT',  () => bot.stop('SIGINT'));
+  process.once('SIGTERM', () => bot.stop('SIGTERM'));
+} else {
+  winstonLogger.warn('[BOT] TELEGRAM_BOT_TOKEN not set — bot is disabled');
+}

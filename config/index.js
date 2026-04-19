@@ -2,6 +2,7 @@ require('dotenv').config();
 
 module.exports = {
   port: parseInt(process.env.PORT, 10) || 3000,
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
 
   openWeather: {
     apiKey: process.env.OPENWEATHER_API_KEY,
