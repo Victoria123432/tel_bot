@@ -1,0 +1,11 @@
+[2026-04-19 19:13:03] INFO: Server started on http://localhost:3000
+[2026-04-19 19:13:03] INFO: Available routes: GET /weather  GET /currency  GET /news
+[2026-04-19 19:13:30] INFO: Cache MISS → /weather?city=Kyiv&units=metric
+[2026-04-19 19:13:30] INFO: Fetching weather for city="Kyiv" units="metric" lang="en"
+[2026-04-19 19:13:48] INFO: Cache MISS → /currency?base=USD&symbols=EUR,UAH,GBP
+[2026-04-19 19:13:48] INFO: Fetching exchange rates: base="USD" symbols="EUR,UAH,GBP"
+[2026-04-19 19:14:55] INFO: Cache MISS → /currency?base=EUR&symbols=USD,UAH,GBP
+[2026-04-19 19:14:55] INFO: Fetching exchange rates: base="EUR" symbols="USD,UAH,GBP"
+[2026-04-19 19:15:07] INFO: Cache MISS → /news?q=Ukraine&lang=en&max=3
+[2026-04-19 19:15:07] INFO: Fetching news: q="Ukraine" lang="en" country="-" max=3
+[2026-04-19 19:15:20] INFO: Cache HIT  → /weather?city=Kyiv&units=metric
