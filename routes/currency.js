@@ -1,29 +1,22 @@
-const express = require('express');
-const axios   = require('axios');
-const config  = require('../config');
-const { cacheMiddleware } = require('../middleware/cache');
-const { winstonLogger }   = require('../middleware/logger');
+const express = require("express");
+const axios = require("axios");
+const config = require("../config");
+const { cacheMiddleware } = require("../middleware/cache");
+const { winstonLogger } = require("../middleware/logger");
 
 const router = express.Router();
-const TTL    = config.cache.ttlCurrency;
+const TTL = config.cache.ttlCurrency;
 
 /**
- * GET /currency?base=EUR&symbols=USD,UAH,GBP
- *
- * Query params:
- *   base    (optional) — base currency code (free plan supports EUR only; default: EUR)
- *   symbols (optional) — comma-separated list of target currencies
- *                        If omitted, all available rates are returned.
- *
- * Note: The ExchangeRatesAPI free plan restricts the base currency to EUR.
- * If a different base is requested the API returns an error and this endpoint
- * will relay that error to the caller.
+  http://localhost:3000/currency?symbols=USD,UAH
  */
-router.get('/', cacheMiddleware(TTL), async (req, res, next) => {
-  const { base = 'EUR', symbols } = req.query;
+router.get("/", cacheMiddleware(TTL), async (req, res, next) => {
+  const { base = "EUR", symbols } = req.query;
 
   try {
-    winstonLogger.info(`Fetching exchange rates: base="${base}" symbols="${symbols || 'all'}"`);
+    winstonLogger.info(
+      `Fetching exchange rates: base="${base}" symbols="${symbols || "all"}"`,
+    );
 
     const params = {
       access_key: config.exchangeRates.apiKey,
@@ -41,22 +34,22 @@ router.get('/', cacheMiddleware(TTL), async (req, res, next) => {
       return res.status(502).json({
         success: false,
         error: {
-          status:  502,
-          message: errInfo.info || 'ExchangeRatesAPI returned an error.',
-          code:    errInfo.code,
+          status: 502,
+          message: errInfo.info || "ExchangeRatesAPI returned an error.",
+          code: errInfo.code,
         },
       });
     }
 
     res.json({
       success: true,
-      source:  'ExchangeRatesAPI',
-      cached:  false,
+      source: "ExchangeRatesAPI",
+      cached: false,
       data: {
-        base:      data.base,
-        date:      data.date,
+        base: data.base,
+        date: data.date,
         timestamp: new Date(data.timestamp * 1000).toISOString(),
-        rates:     data.rates,
+        rates: data.rates,
       },
     });
   } catch (err) {
@@ -64,7 +57,10 @@ router.get('/', cacheMiddleware(TTL), async (req, res, next) => {
       const { status, data } = err.response;
       return res.status(status).json({
         success: false,
-        error: { status, message: data?.error?.info || 'ExchangeRatesAPI error' },
+        error: {
+          status,
+          message: data?.error?.info || "ExchangeRatesAPI error",
+        },
       });
     }
     next(err);

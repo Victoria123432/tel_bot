@@ -1,12 +1,8 @@
-const NodeCache = require('node-cache');
-const { winstonLogger } = require('./logger');
+const NodeCache = require("node-cache");
+const { winstonLogger } = require("./logger");
 
 const store = new NodeCache({ useClones: false });
 
-/**
- * Returns an Express middleware that caches responses for `ttl` seconds.
- * The cache key is built from the full request URL (path + query string).
- */
 function cacheMiddleware(ttl) {
   return (req, res, next) => {
     const key = req.originalUrl;
