@@ -16,9 +16,9 @@ async function buildWeatherMessage(city, units = "metric", lang = "uk") {
 
   return (
     `*Погода: ${w.city}, ${w.country}*\n` +
-    `📋 ${capitalize(w.weather.description)}\n\n` +
+    ` ${capitalize(w.weather.description)}\n\n` +
     ` Температура:  *${w.temperature.current}${u}*  (відчувається ${w.temperature.feelsLike}${u})\n` +
-    ` Макс: ${w.temperature.max}${u}   🔽 Мін: ${w.temperature.min}${u}\n\n` +
+    ` Макс: ${w.temperature.max}${u}    Мін: ${w.temperature.min}${u}\n\n` +
     ` Вологість: ${w.humidity}%\n` +
     ` Вітер: ${w.wind.speed} м/с, ${windDir}\n` +
     ` Видимість: ${(w.visibility / 1000).toFixed(1)} км\n\n` +
