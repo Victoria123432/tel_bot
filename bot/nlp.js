@@ -1,48 +1,91 @@
-'use strict';
-
-/**
- * Lightweight keyword-based intent detector.
- * Returns one of: 'weather' | 'currency' | 'news' | 'greeting' | 'help' | null
- */
+"use strict";
 
 const INTENTS = [
   {
-    name: 'weather',
+    name: "weather",
     keywords: [
-      'погода', 'погоду', 'погоди', 'weather', 'температура', 'температуру',
-      'температури', 'temperature', 'прогноз', 'forecast', 'спека', 'мороз',
-      'дощ', 'сніг', 'хмарно', 'сонячно', 'rain', 'snow', 'sunny', 'cloudy',
-      'градус', 'celsius', 'fahrenheit',
+      "погода",
+      "погоду",
+      "погоди",
+      "weather",
+      "температура",
+      "температуру",
+      "температури",
+      "temperature",
+      "прогноз",
+      "forecast",
+      "спека",
+      "мороз",
+      "дощ",
+      "сніг",
+      "хмарно",
+      "сонячно",
+      "rain",
+      "snow",
+      "sunny",
+      "cloudy",
+      "градус",
+      "celsius",
+      "fahrenheit",
     ],
   },
   {
-    name: 'currency',
+    name: "currency",
     keywords: [
-      'курс', 'валюта', 'валюти', 'валюту', 'currency', 'exchange', 'rate',
-      'долар', 'доларів', 'dollar', 'usd', 'євро', 'euro', 'eur',
-      'гривня', 'гривні', 'hryvnia', 'uah', 'фунт', 'pound', 'gbp',
-      'конвертер', 'конвертація', 'convert',
+      "курс",
+      "валюта",
+      "валюти",
+      "валюту",
+      "currency",
+      "exchange",
+      "rate",
+      "долар",
+      "доларів",
+      "dollar",
+      "usd",
+      "євро",
+      "euro",
+      "eur",
+      "гривня",
+      "гривні",
+      "hryvnia",
+      "uah",
+      "фунт",
+      "pound",
+      "gbp",
+      "конвертер",
+      "конвертація",
+      "convert",
     ],
   },
   {
-    name: 'news',
+    name: "greeting",
     keywords: [
-      'новини', 'новина', 'новость', 'news', 'події', 'подія', 'headline',
-      'статті', 'стаття', 'article', 'latest', 'останні',
+      "привіт",
+      "hello",
+      "hi",
+      "hey",
+      "вітаю",
+      "добрий",
+      "доброго",
+      "доброго ранку",
+      "good morning",
+      "good evening",
+      "хай",
     ],
   },
   {
-    name: 'greeting',
+    name: "help",
     keywords: [
-      'привіт', 'hello', 'hi', 'hey', 'вітаю', 'добрий', 'доброго',
-      'доброго ранку', 'good morning', 'good evening', 'хай',
-    ],
-  },
-  {
-    name: 'help',
-    keywords: [
-      'допомога', 'допоможи', 'help', 'що вмієш', 'що ти вмієш',
-      'команди', 'commands', 'можливості', 'як користуватись',
+      "допомога",
+      "допоможи",
+      "help",
+      "що вмієш",
+      "що ти вмієш",
+      "команди",
+      "commands",
+      "можливості",
+      "як користуватись",
     ],
   },
 ];
@@ -66,9 +109,10 @@ function detectIntent(text) {
   // Try to extract a city name for weather intent
   // Patterns: "погода в Kyiv", "weather in London", "погода Kyiv"
   let city = null;
-  if (intent === 'weather') {
-    const cityMatch =
-      lower.match(/(?:погода|weather|прогноз|forecast)\s+(?:в|у|in|for)?\s*([a-zа-яіїєґ']+)/i);
+  if (intent === "weather") {
+    const cityMatch = lower.match(
+      /(?:погода|weather|прогноз|forecast)\s+(?:в|у|in|for)?\s*([a-zа-яіїєґ']+)/i,
+    );
     if (cityMatch) city = cityMatch[1];
   }
 
